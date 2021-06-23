@@ -25,6 +25,10 @@ Fury distribution goldpinger is deployed with the following configuration:
 - Exposes Prometheus metrics on port `8080`, path: `/metrics`.
 - Metrics are scraped by Prometheus with `30s` intervals.
 
+Note: In big clusters with lots of nodes you can set environment variable `PING_NUMBER` 
+so nodes ping only a subset of other nodes. It decreases number of metrics generated which 
+causes problems on Prometheus in big clusters.
+
 ## Deployment
 
 You can deploy goldpinger by running the following command in the root of this project:
