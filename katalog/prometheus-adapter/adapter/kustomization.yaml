@@ -1,0 +1,23 @@
+# Copyright (c) 2020 SIGHUP s.r.l All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: monitoring
+
+images:
+  - name: directxman12/k8s-prometheus-adapter-amd64
+    newName: directxman12/k8s-prometheus-adapter-amd64
+    newTag: v0.8.2
+
+resources:
+  - apiservice.yml
+  - deploy.yml
+  - rbac.yml
+
+configMapGenerator:
+  - name: prometheus-adapter
+    files:
+      - configs/config.yaml

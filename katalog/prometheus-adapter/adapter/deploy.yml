@@ -1,0 +1,92 @@
+# Copyright (c) 2020 SIGHUP s.r.l All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: prometheus-adapter
+  name: prometheus-adapter
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus-adapter
+  template:
+    metadata:
+      labels:
+        app: prometheus-adapter
+      name: prometheus-adapter
+    spec:
+      serviceAccountName: prometheus-adapter
+      containers:
+        - name: prometheus-adapter
+          image: "directxman12/k8s-prometheus-adapter-amd64:v0.8.2"
+          imagePullPolicy: IfNotPresent
+          args:
+            - /adapter
+            - --secure-port=6443
+            - --cert-dir=/tmp/cert
+            - --logtostderr=true
+            - --prometheus-url=http://prometheus-k8s.monitoring.svc:9090
+            - --metrics-relist-interval=1m
+            - --v=4
+            - --config=/etc/adapter/config.yaml
+          ports:
+            - containerPort: 6443
+              name: https
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 30
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["all"]
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+          volumeMounts:
+            - mountPath: /etc/adapter/
+              name: config
+              readOnly: true
+            - mountPath: /tmp
+              name: tmp
+      volumes:
+        - name: config
+          configMap:
+            name: prometheus-adapter
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: prometheus-adapter
+  name: prometheus-adapter
+spec:
+  ports:
+    - port: 443
+      protocol: TCP
+      targetPort: https
+  selector:
+    app: prometheus-adapter
+  type: ClusterIP
